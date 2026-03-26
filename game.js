@@ -236,10 +236,7 @@ function handlePlayerShot(row, col) {
 
   if (playerShotsRemaining > 0) {
     // Player has more shots this turn
-    const cfg = DIFFICULTY[difficulty];
-    const total = cfg.playerShots;
-    const remaining = playerShotsRemaining;
-    setMessage((ship ? 'Hit! ' : 'Miss. ') + `${remaining} shot${remaining > 1 ? 's' : ''} remaining this turn.`);
+    setMessage((ship ? 'Hit! ' : 'Miss. ') + `${playerShotsRemaining} shot${playerShotsRemaining > 1 ? 's' : ''} remaining this turn.`);
     return;
   }
 
