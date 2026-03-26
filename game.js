@@ -34,6 +34,7 @@ const newGameBtn = document.getElementById('new-game-btn');
 const playerScoreEl = document.getElementById('player-score');
 const aiScoreEl = document.getElementById('ai-score');
 const sunkLogEl = document.getElementById('sunk-log');
+const rotateBtn = document.getElementById('rotate-btn');
 
 // ===== BOARD CREATION =====
 
@@ -158,9 +159,10 @@ function handlePlaceShip(row, col) {
     renderBoard(playerBoardEl, playerBoard, false);
     renderBoard(aiBoardEl, aiBoard, true);
     aiBoardEl.classList.remove('disabled');
+    rotateBtn.classList.add('hidden');
   } else {
     const next = SHIPS[currentShipIndex];
-    setMessage(`Place your ${next.name} (${next.size} cells). Click to place, press R to rotate.`);
+    setMessage(`Place your ${next.name} (${next.size} cells). Click to place, tap Rotate or press R.`);
     renderBoard(playerBoardEl, playerBoard, false);
   }
 }
@@ -421,14 +423,20 @@ function addSunkLog(msg) {
 
 // ===== KEYBOARD (ROTATE) =====
 
+function toggleOrientation() {
+  if (phase !== 'placing') return;
+  orientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
+  rotateBtn.textContent = `Rotate Ship (${orientation === 'horizontal' ? '\u2194' : '\u2195'})`;
+  setMessage(`Orientation: ${orientation}. Place your ${SHIPS[currentShipIndex].name} (${SHIPS[currentShipIndex].size} cells).`);
+}
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'r' || e.key === 'R') {
-    if (phase === 'placing') {
-      orientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
-      setMessage(`Orientation: ${orientation}. Place your ${SHIPS[currentShipIndex].name} (${SHIPS[currentShipIndex].size} cells).`);
-    }
+    toggleOrientation();
   }
 });
+
+rotateBtn.addEventListener('click', toggleOrientation);
 
 // ===== NEW GAME =====
 
@@ -450,7 +458,9 @@ function initGame() {
 
   sunkLogEl.innerHTML = '';
   updateScores();
-  setMessage(`Place your ${SHIPS[0].name} (${SHIPS[0].size} cells). Click to place, press R to rotate.`);
+  setMessage(`Place your ${SHIPS[0].name} (${SHIPS[0].size} cells). Click to place, tap Rotate or press R.`);
+  rotateBtn.classList.remove('hidden');
+  rotateBtn.textContent = 'Rotate Ship (\u2194)';
 
   renderBoard(playerBoardEl, playerBoard, false);
   renderBoard(aiBoardEl, aiBoard, true);

@@ -166,6 +166,37 @@ h1 {
 
 #controls {
   margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+#rotate-btn {
+  background: #ff9800;
+  color: #0a1628;
+  border: none;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: background 0.2s, transform 0.1s;
+}
+
+#rotate-btn:hover {
+  background: #ffb74d;
+  transform: scale(1.05);
+}
+
+#rotate-btn:active {
+  transform: scale(0.98);
+}
+
+#rotate-btn.hidden {
+  display: none;
 }
 
 #new-game-btn {
