@@ -243,7 +243,6 @@ function aiTurn() {
       // Remove hits belonging to this sunk ship from tracking
       aiHits = aiHits.filter(h => h.ship !== ship);
       // Remove targets that are only adjacent to the sunk ship's cells
-      const sunkCellKeys = new Set(ship.cells.map(c => `${c.r},${c.c}`));
       aiTargetQueue = aiTargetQueue.filter(t => {
         // Keep target if it's not solely adjacent to sunk ship cells
         const adjacent = [
