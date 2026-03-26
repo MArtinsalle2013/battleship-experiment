@@ -9,6 +9,14 @@ const SHIPS = [
   { name: 'Destroyer', size: 2 },
 ];
 
+// Difficulty config
+const DIFFICULTY = {
+  easy:   { playerShots: 2, aiShots: 1, label: 'Easy' },
+  normal: { playerShots: 1, aiShots: 1, label: 'Normal' },
+  hard:   { playerShots: 1, aiShots: 2, label: 'Hard' },
+};
+let difficulty = 'easy';
+
 // Game state
 let playerBoard = [];
 let aiBoard = [];
@@ -19,6 +27,7 @@ let currentShipIndex = 0;
 let orientation = 'horizontal'; // 'horizontal' or 'vertical'
 let playerSunkCount = 0;
 let aiSunkCount = 0;
+let playerShotsRemaining = 0;
 
 // AI hunt state
 let aiMode = 'hunt'; // 'hunt' or 'target'
@@ -35,6 +44,8 @@ const playerScoreEl = document.getElementById('player-score');
 const aiScoreEl = document.getElementById('ai-score');
 const sunkLogEl = document.getElementById('sunk-log');
 const rotateBtn = document.getElementById('rotate-btn');
+const diffSelector = document.getElementById('difficulty-selector');
+const diffBtns = document.querySelectorAll('.diff-btn');
 
 // ===== BOARD CREATION =====
 
@@ -155,11 +166,15 @@ function handlePlaceShip(row, col) {
   if (currentShipIndex >= SHIPS.length) {
     phase = 'playing';
     placeAIShips();
-    setMessage('All ships placed! Click on the enemy board to fire.');
+    const cfg = DIFFICULTY[difficulty];
+    playerShotsRemaining = cfg.playerShots;
+    const shotInfo = cfg.playerShots > 1 ? ` You get ${cfg.playerShots} shots per turn!` : '';
+    setMessage('All ships placed! Click on the enemy board to fire.' + shotInfo);
     renderBoard(playerBoardEl, playerBoard, false);
     renderBoard(aiBoardEl, aiBoard, true);
     aiBoardEl.classList.remove('disabled');
     rotateBtn.classList.add('hidden');
+    diffSelector.classList.add('locked');
   } else {
     const next = SHIPS[currentShipIndex];
     setMessage(`Place your ${next.name} (${next.size} cells). Click to place, tap Rotate or press R.`);
@@ -216,80 +231,112 @@ function handlePlayerShot(row, col) {
     setMessage('Miss.');
   }
 
+  playerShotsRemaining--;
   renderBoard(aiBoardEl, aiBoard, true);
+
+  if (playerShotsRemaining > 0) {
+    // Player has more shots this turn
+    const cfg = DIFFICULTY[difficulty];
+    const total = cfg.playerShots;
+    const remaining = playerShotsRemaining;
+    setMessage((ship ? 'Hit! ' : 'Miss. ') + `${remaining} shot${remaining > 1 ? 's' : ''} remaining this turn.`);
+    return;
+  }
 
   // AI turn after short delay
   aiBoardEl.classList.add('disabled');
   setTimeout(() => {
-    aiTurn();
+    runAiTurns();
   }, 500);
 }
 
-function aiTurn() {
-  if (phase !== 'playing') return;
+function runAiTurns() {
+  const cfg = DIFFICULTY[difficulty];
+  let shotsLeft = cfg.aiShots;
+  let lastMsg = '';
 
-  const { row, col } = aiChooseTarget();
-  playerBoard[row][col].hit = true;
-  const ship = playerBoard[row][col].ship;
-
-  if (ship) {
-    ship.hits++;
-    aiHits.push({ r: row, c: col, ship: ship });
-
-    if (ship.hits === ship.size) {
-      ship.sunk = true;
-      playerSunkCount++;
-      addSunkLog(`The enemy sunk your ${ship.name}!`);
-      updateScores();
-
-      // Remove hits belonging to this sunk ship from tracking
-      aiHits = aiHits.filter(h => h.ship !== ship);
-      // Remove targets that are only adjacent to the sunk ship's cells
-      aiTargetQueue = aiTargetQueue.filter(t => {
-        // Keep target if it's not solely adjacent to sunk ship cells
-        const adjacent = [
-          { r: t.r - 1, c: t.c },
-          { r: t.r + 1, c: t.c },
-          { r: t.r, c: t.c - 1 },
-          { r: t.r, c: t.c + 1 },
-        ];
-        const hasNonSunkNeighborHit = adjacent.some(a => {
-          const key = `${a.r},${a.c}`;
-          return aiHits.some(h => `${h.r},${h.c}` === key);
-        });
-        return hasNonSunkNeighborHit;
-      });
-
-      // If no more unsunk hits, go back to hunt mode
-      if (aiHits.length === 0) {
-        aiMode = 'hunt';
-        aiTargetQueue = [];
-      }
-
-      if (playerSunkCount === SHIPS.length) {
-        phase = 'gameover';
-        setMessage('You lose! All your ships have been destroyed.');
-        renderBoard(playerBoardEl, playerBoard, false);
+  function doOneAiShot() {
+    if (phase !== 'playing' || shotsLeft <= 0) {
+      // AI turn done, start player turn
+      if (phase === 'playing') {
+        playerShotsRemaining = cfg.playerShots;
+        if (cfg.playerShots > 1) {
+          setMessage((lastMsg ? lastMsg + ' ' : '') + `Your turn! ${playerShotsRemaining} shots this turn.`);
+        } else if (lastMsg) {
+          setMessage(lastMsg);
+        }
         renderBoard(aiBoardEl, aiBoard, true);
-        aiBoardEl.classList.add('disabled');
-        return;
+        aiBoardEl.classList.remove('disabled');
       }
-    } else {
-      // Switch to target mode: add adjacent cells
-      aiMode = 'target';
-      addAdjacentTargets(row, col);
+      return;
     }
 
-    setMessage(`Enemy hit your ship at (${row + 1}, ${col + 1})!`);
-  } else {
-    setMessage(`Enemy missed at (${row + 1}, ${col + 1}).`);
+    const { row, col } = aiChooseTarget();
+    playerBoard[row][col].hit = true;
+    const ship = playerBoard[row][col].ship;
+
+    if (ship) {
+      ship.hits++;
+      aiHits.push({ r: row, c: col, ship: ship });
+
+      if (ship.hits === ship.size) {
+        ship.sunk = true;
+        playerSunkCount++;
+        addSunkLog(`The enemy sunk your ${ship.name}!`);
+        updateScores();
+
+        // Remove hits belonging to this sunk ship from tracking
+        aiHits = aiHits.filter(h => h.ship !== ship);
+        // Remove targets that are only adjacent to the sunk ship's cells
+        aiTargetQueue = aiTargetQueue.filter(t => {
+          const adjacent = [
+            { r: t.r - 1, c: t.c },
+            { r: t.r + 1, c: t.c },
+            { r: t.r, c: t.c - 1 },
+            { r: t.r, c: t.c + 1 },
+          ];
+          const hasNonSunkNeighborHit = adjacent.some(a => {
+            const key = `${a.r},${a.c}`;
+            return aiHits.some(h => `${h.r},${h.c}` === key);
+          });
+          return hasNonSunkNeighborHit;
+        });
+
+        if (aiHits.length === 0) {
+          aiMode = 'hunt';
+          aiTargetQueue = [];
+        }
+
+        if (playerSunkCount === SHIPS.length) {
+          phase = 'gameover';
+          setMessage('You lose! All your ships have been destroyed.');
+          renderBoard(playerBoardEl, playerBoard, false);
+          renderBoard(aiBoardEl, aiBoard, true);
+          aiBoardEl.classList.add('disabled');
+          return;
+        }
+      } else {
+        aiMode = 'target';
+        addAdjacentTargets(row, col);
+      }
+
+      lastMsg = `Enemy hit your ship at (${row + 1}, ${col + 1})!`;
+    } else {
+      lastMsg = `Enemy missed at (${row + 1}, ${col + 1}).`;
+    }
+
+    setMessage(lastMsg);
+    renderBoard(playerBoardEl, playerBoard, false);
+    shotsLeft--;
+
+    if (shotsLeft > 0 && phase === 'playing') {
+      setTimeout(doOneAiShot, 400);
+    } else {
+      setTimeout(() => doOneAiShot(), 0);
+    }
   }
 
-  renderBoard(playerBoardEl, playerBoard, false);
-  if (phase === 'playing') {
-    renderBoard(aiBoardEl, aiBoard, true);
-    aiBoardEl.classList.remove('disabled');
-  }
+  doOneAiShot();
 }
 
 // ===== AI LOGIC (Hunt/Target) =====
@@ -438,6 +485,17 @@ document.addEventListener('keydown', (e) => {
 
 rotateBtn.addEventListener('click', toggleOrientation);
 
+// ===== DIFFICULTY SELECTION =====
+
+diffBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (phase !== 'placing') return;
+    difficulty = btn.dataset.difficulty;
+    diffBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
 // ===== NEW GAME =====
 
 function initGame() {
@@ -456,11 +514,14 @@ function initGame() {
   aiTriedCells = new Set();
   previewCells = [];
 
+  playerShotsRemaining = 0;
+
   sunkLogEl.innerHTML = '';
   updateScores();
   setMessage(`Place your ${SHIPS[0].name} (${SHIPS[0].size} cells). Click to place, tap Rotate or press R.`);
   rotateBtn.classList.remove('hidden');
   rotateBtn.textContent = 'Rotate Ship (\u2194)';
+  diffSelector.classList.remove('locked');
 
   renderBoard(playerBoardEl, playerBoard, false);
   renderBoard(aiBoardEl, aiBoard, true);

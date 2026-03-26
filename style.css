@@ -23,6 +23,52 @@ h1 {
   letter-spacing: 4px;
 }
 
+#difficulty-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+#difficulty-selector label {
+  font-size: 1rem;
+  color: #90caf9;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.diff-btn {
+  background: #1a2a44;
+  color: #e0e0e0;
+  border: 2px solid #263850;
+  padding: 8px 18px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background 0.2s, border-color 0.2s, transform 0.1s;
+}
+
+.diff-btn:hover {
+  background: #263850;
+  transform: scale(1.05);
+}
+
+.diff-btn.active {
+  border-color: #4fc3f7;
+  background: #1e3a5f;
+  color: #4fc3f7;
+}
+
+#difficulty-selector.locked .diff-btn {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
 #message-bar {
   background: #1a2a44;
   border: 1px solid #4fc3f7;
