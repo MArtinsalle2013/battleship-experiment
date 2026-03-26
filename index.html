@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battleship</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Battleship</h1>
+
+  <div id="message-bar">Place your Carrier (5 cells). Click to place, press R to rotate.</div>
+
+  <div id="game-container">
+    <div class="board-section">
+      <h2>Your Board</h2>
+      <div id="player-board" class="board"></div>
+    </div>
+    <div class="board-section">
+      <h2>Enemy Board</h2>
+      <div id="ai-board" class="board"></div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button id="new-game-btn">New Game</button>
+  </div>
+
+  <div id="scoreboard">
+    <span id="player-score">Your ships sunk: 0/5</span>
+    <span id="ai-score">Enemy ships sunk: 0/5</span>
+  </div>
+
+  <div id="sunk-log"></div>
+
+  <script src="game.js"></script>
+</body>
+</html>
