@@ -242,10 +242,21 @@ function aiTurn() {
 
       // Remove hits belonging to this sunk ship from tracking
       aiHits = aiHits.filter(h => h.ship !== ship);
-      // Remove targets related to sunk ship
+      // Remove targets that are only adjacent to the sunk ship's cells
+      const sunkCellKeys = new Set(ship.cells.map(c => `${c.r},${c.c}`));
       aiTargetQueue = aiTargetQueue.filter(t => {
-        // Keep targets that aren't adjacent to sunk ship cells
-        return true;
+        // Keep target if it's not solely adjacent to sunk ship cells
+        const adjacent = [
+          { r: t.r - 1, c: t.c },
+          { r: t.r + 1, c: t.c },
+          { r: t.r, c: t.c - 1 },
+          { r: t.r, c: t.c + 1 },
+        ];
+        const hasNonSunkNeighborHit = adjacent.some(a => {
+          const key = `${a.r},${a.c}`;
+          return aiHits.some(h => `${h.r},${h.c}` === key);
+        });
+        return hasNonSunkNeighborHit;
       });
 
       // If no more unsunk hits, go back to hunt mode
